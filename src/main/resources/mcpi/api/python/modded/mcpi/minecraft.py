@@ -35,6 +35,16 @@ from .util import flatten
 def intFloor(*args):
     return [int(math.floor(x)) for x in flatten(args)]
 
+# d taylor additions
+
+# vector bounds from cuboid size and centre
+def extent(centre, sidex, sidey, sidez):
+  mi = centre + Vec3(0.5,0.5,0.5)- Vec3(sidex/2,sidey/2,sidez/2)
+  ma = mi + Vec3(sidex-1,sidey-1,sidez-1)
+  return (mi, ma)
+
+# end d taylor additions
+
 class CmdPositioner:
     """Methods for setting and getting positions"""
     def __init__(self, connection, packagePrefix):
@@ -370,6 +380,26 @@ class Minecraft:
     def removeEntities(self, typeId=-1):
         """Remove entities all currently loaded Entities by type (typeId:int) => (removedEntitiesCount:int)"""
         return int(self.conn.sendReceive(b"world.removeEntities", typeId))
+
+    # d taylor additions
+    def setBlocksCentred(self, centre, sidex, sidey, sidez, blockType, deltaX = 0, deltaY = 0, deltaZ = 0, hollow = False, keepCentre = True) :
+        if keepCentre:
+            cBlock = self.getBlock(centre)  
+        targetCentre = centre+Vec3(deltaX,deltaY,deltaZ)
+        (mi,ma) = extent(targetCentre, sidex, sidey, sidez)
+        if not hollow:
+            self.setBlocks(mi.x,mi.y,mi.z,ma.x,ma.y,ma.z,blockType)
+        else: #hollow
+            self.setBlocksCentred(Vec3(          mi.x,targetCentre.y,targetCentre.z), 1    ,sidey, sidez, blockType, keepCentre=False)
+            self.setBlocksCentred(Vec3(          ma.x,targetCentre.y,targetCentre.z), 1    ,sidey, sidez, blockType, keepCentre=False)
+            self.setBlocksCentred(Vec3(targetCentre.x,          mi.y,targetCentre.z), sidex    ,1, sidez, blockType, keepCentre=False)
+            self.setBlocksCentred(Vec3(targetCentre.x,          ma.y,targetCentre.z), sidex    ,1, sidez, blockType, keepCentre=False)
+            self.setBlocksCentred(Vec3(targetCentre.x,targetCentre.y,          mi.z), sidex    ,sidey, 1, blockType, keepCentre=False)
+            self.setBlocksCentred(Vec3(targetCentre.x,targetCentre.y,          ma.z), sidex    ,sidey, 1, blockType, keepCentre=False)
+        if keepCentre:
+            self.setBlock(centre, cBlock)
+    
+    # end d taylor additions
 
     @staticmethod
     def create(address = "localhost", port = 4711):
