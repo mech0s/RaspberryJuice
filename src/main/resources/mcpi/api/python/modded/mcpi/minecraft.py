@@ -399,7 +399,33 @@ class Minecraft:
         if keepCentre:
             self.setBlock(centre, cBlock)
     
+    def locateNearestBlock(self, nearPos, blockType, cubeside = 17):
+        if cubeside % 2 == 0:
+            cubeside += 1
+        sidex = cubeside
+        sidey = cubeside
+        sidez = cubeside
+        (mi,ma)=extent(nearPos,sidex,sidey,sidez)
+        blockmap = self.getBlocks(mi.x,mi.y,mi.z,ma.x,ma.y,ma.z)
+        blocklist = list(blockmap)
+        hits = list()
+        for indx in range(len(blocklist)):
+            if blocklist[indx] == blockType.id:
+                z = indx % sidez
+                x = int(indx/sidez) % sidex
+                y = int((indx/sidez)/sidex )
+                pos = nearPos - Vec3(int(cubeside/2),int(cubeside/2),int(cubeside/2)) + Vec3(x,y,z)
+                hits.append((pos, Vec3.lengthSqr(pos-nearPos)))
+        nearest = Vec3(0,0,0)
+        neardist = 99999
+        for (ps, dist) in hits:
+            if dist < neardist:
+                nearest = ps
+                neardist = dist
+        return nearest
+
     # end d taylor additions
+
 
     @staticmethod
     def create(address = "localhost", port = 4711):
